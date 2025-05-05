@@ -131,7 +131,6 @@
          "</body>\r\n"
          "</html>\r\n", errnum, shortmsg, longmsg, cause);
          
-     // Write out response headers
      sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
      write_or_die(fd, buf, strlen(buf));
      
@@ -141,10 +140,8 @@
      sprintf(buf, "Content-Length: %lu\r\n\r\n", strlen(body));
      write_or_die(fd, buf, strlen(buf));
      
-     // Write out the body
      write_or_die(fd, body, strlen(body));
      
-     // Close the connection
      close_or_die(fd);
  }
  
@@ -167,7 +164,6 @@
              strcat(filename, "index.html");
          return 1;
      } else { 
-         // dynamic content (not handled)
          ptr = index(uri, '?');
          if (ptr) {
              strcpy(cgiargs, ptr+1);
@@ -198,11 +194,9 @@
      request_get_filetype(filename, filetype);
      srcfd = open_or_die(filename, O_RDONLY, 0);
      
-     // Memory-map the file
      srcp = mmap_or_die(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
      close_or_die(srcfd);
      
-     // Form the HTTP response header
      snprintf(buf, MAXBUF,
         "HTTP/1.0 200 OK\r\n"
         "Server: OSTEP WebServer\r\n"
@@ -271,12 +265,10 @@
      char buf[MAXBUF], method[MAXBUF], uri[MAXBUF], version[MAXBUF];
      char filename[MAXBUF], cgiargs[MAXBUF];
     
-     // Read the first line of the HTTP request
      readline_or_die(fd, buf, MAXBUF);
      sscanf(buf, "%s %s %s", method, uri, version);
      printf("method:%s uri:%s version:%s\n", method, uri, version);
      
-     // Only the GET method is implemented
      if (strcasecmp(method, "GET")) {
          request_error(fd, method, "501", "Not Implemented", "server does not implement this method");
          return;
@@ -285,7 +277,6 @@
      
      is_static = request_parse_uri(uri, filename, cgiargs);
      
-     // Check if requested file exists
      if (stat(filename, &sbuf) < 0) {
          request_error(fd, filename, "404", "Not found", "server could not find this file");
          return;
@@ -298,13 +289,12 @@
              return;
          }
          
-         // Reject any URI that contains ".." to avoid serving files outside the intended directory
          if (strstr(uri, "..") != NULL) {
              request_error(fd, uri, "403", "Forbidden", "directory traversal attempt detected");
              return;
          }
          
-         // Prepare a new request node with all the data needed
+         // Prepare new request node with data needed
          request_node *req_new = malloc(sizeof(request_node));
          if (!req_new) {
              perror("malloc");
